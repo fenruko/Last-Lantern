@@ -1,0 +1,60 @@
+name: Linux release build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-x86_64:
+    name: Test and package Linux x86_64
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            build-essential pkg-config \
+            libx11-dev libxi-dev libxrandr-dev libxcursor-dev libxinerama-dev \
+            libasound2-dev
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Cargo files
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests
+        run: cargo test --all-features
+
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features
+
+      - name: Build optimized Linux executable
+        run: cargo build --release --all-features --target x86_64-unknown-linux-gnu
+
+      - name: Package executable and README
+        run: |
+          mkdir -p dist
+          cp target/x86_64-unknown-linux-gnu/release/last-lantern dist/last-lantern
+          cp README.md dist/README.md
+          tar -C dist -czf last-lantern-linux-x86_64.tar.gz last-lantern README.md
+
+      - name: Upload downloadable release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-lantern-linux-x86_64
+          path: |
+            dist/last-lantern
+            last-lantern-linux-x86_64.tar.gz
+          if-no-files-found: error
+          retention-days: 30

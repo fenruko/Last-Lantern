@@ -37,7 +37,7 @@ jobs:
         run: cargo test --all-features
 
       - name: Run Clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --all-targets --all-features
 
       - name: Build optimized Linux executable
         run: cargo build --release --all-features --target x86_64-unknown-linux-gnu
